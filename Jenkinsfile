@@ -74,7 +74,7 @@ pipeline {
 
           Please investigate the attached log.
         """,
-        to: 'you@domain.com',
+        to: 'tejussrao@gmail.com',
         attachLog: true,
         mimeType: 'text/plain'
       )
