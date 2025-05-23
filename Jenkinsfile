@@ -3,7 +3,7 @@ pipeline {
 
   triggers {
     githubPush()          // on every GitHub push
-
+      // empty comment jsut to trigger the build
   }
 
   environment {
