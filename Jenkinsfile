@@ -12,68 +12,72 @@ pipeline {
         checkout scm
       }
     }
+
     stage('Install Dependencies') {
       steps {
         bat 'npm install'
       }
     }
+
     stage('Run Tests') {
       steps {
+        // Run tests but don't fail the build if they error
         bat script: 'npm test', returnStatus: true
       }
     }
+
     stage('Generate Coverage') {
       steps {
+        // Generate coverage report, but continue even if it errors
         bat script: 'npm run coverage', returnStatus: true
       }
     }
+
     stage('Security Scan') {
       steps {
+        // Audit for vulnerabilities, but continue even if it errors
         bat script: 'npm audit', returnStatus: true
       }
     }
-    // ← SonarCloud stage removed
   }
-
-pipeline {
-  /* … your stages … */
 
   post {
     success {
-      echo '✅ Build succeeded — sending success email w/ log.'
+      echo '✅ Build succeeded — emailing console log...'
       emailext(
-        subject: "✔️ SUCCESS: ${env.JOB_NAME} #${env.BUILD_NUMBER}",
+        subject: "✔️ BUILD SUCCESS: ${env.JOB_NAME} #${env.BUILD_NUMBER}",
         body: """\
           Hi,
 
-          Your job '${env.JOB_NAME}' (#${env.BUILD_NUMBER}) succeeded.
-          See attached console log for details.
+          Your Jenkins job '${env.JOB_NAME}' (#${env.BUILD_NUMBER}) succeeded!
+          
+          View details at: ${env.BUILD_URL}
 
-          URL: ${env.BUILD_URL}
+          Cheers,
+          Jenkins
         """,
         to: 'you@domain.com',
-        attachLog: true,                 // <-- attaches the entire console log
+        attachLog: true,
         mimeType: 'text/plain'
       )
     }
-
     failure {
-      echo '❌ Build failed — sending failure email w/ log.'
+      echo '❌ Build failed — emailing console log...'
       emailext(
-        subject: "❌ FAILURE: ${env.JOB_NAME} #${env.BUILD_NUMBER}",
+        subject: "❌ BUILD FAILURE: ${env.JOB_NAME} #${env.BUILD_NUMBER}",
         body: """\
           Hi,
 
-          Your job '${env.JOB_NAME}' (#${env.BUILD_NUMBER}) failed.
-          See attached console log for the error stack.
+          Your Jenkins job '${env.JOB_NAME}' (#${env.BUILD_NUMBER}) failed.
+          
+          View details at: ${env.BUILD_URL}
 
-          URL: ${env.BUILD_URL}
+          Please investigate the attached log.
         """,
         to: 'you@domain.com',
-        attachLog: true,                 // <-- same here
+        attachLog: true,
         mimeType: 'text/plain'
       )
     }
   }
 }
-
