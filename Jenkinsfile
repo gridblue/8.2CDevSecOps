@@ -35,41 +35,45 @@ pipeline {
     // ← SonarCloud stage removed
   }
 
+pipeline {
+  /* … your stages … */
+
   post {
     success {
-      echo '✅ Build succeeded — sending success email.'
+      echo '✅ Build succeeded — sending success email w/ log.'
       emailext(
-        subject: "✔️ BUILD SUCCESS: ${env.JOB_NAME} #${env.BUILD_NUMBER}",
+        subject: "✔️ SUCCESS: ${env.JOB_NAME} #${env.BUILD_NUMBER}",
         body: """\
           Hi,
 
-          The Jenkins job '${env.JOB_NAME}' (#${env.BUILD_NUMBER}) succeeded!
+          Your job '${env.JOB_NAME}' (#${env.BUILD_NUMBER}) succeeded.
+          See attached console log for details.
 
-          • URL: ${env.BUILD_URL}
-          • Commit: ${env.GIT_COMMIT ?: 'N/A'}
-
-          Cheers,
-          Jenkins
+          URL: ${env.BUILD_URL}
         """,
-        to: 'your.email@domain.com'
+        to: 'you@domain.com',
+        attachLog: true,                 // <-- attaches the entire console log
+        mimeType: 'text/plain'
       )
     }
+
     failure {
-      echo '❌ Build failed — sending failure email.'
+      echo '❌ Build failed — sending failure email w/ log.'
       emailext(
-        subject: "❌ BUILD FAILURE: ${env.JOB_NAME} #${env.BUILD_NUMBER}",
+        subject: "❌ FAILURE: ${env.JOB_NAME} #${env.BUILD_NUMBER}",
         body: """\
           Hi,
 
-          The Jenkins job '${env.JOB_NAME}' (#${env.BUILD_NUMBER}) has failed.
+          Your job '${env.JOB_NAME}' (#${env.BUILD_NUMBER}) failed.
+          See attached console log for the error stack.
 
-          • URL: ${env.BUILD_URL}
-          • Check console output for details.
-
-          Please investigate.
+          URL: ${env.BUILD_URL}
         """,
-        to: 'your.email@domain.com'
+        to: 'you@domain.com',
+        attachLog: true,                 // <-- same here
+        mimeType: 'text/plain'
       )
     }
   }
 }
+
