@@ -17,28 +17,28 @@ pipeline {
     stage('Install Dependencies') {
       steps {
         // Install Node.js packages
-        sh 'npm install'
+        bat 'npm install'
       }
     }
 
     stage('Run Tests') {
       steps {
         // Run tests but don’t fail the build if they break
-        sh 'npm test || true'
+        bat 'npm test || true'
       }
     }
 
     stage('Generate Coverage') {
       steps {
         // Create a coverage report
-        sh 'npm run coverage || true'
+        bat 'npm run coverage || true'
       }
     }
 
     stage('Security Scan') {
       steps {
         // Check for vulnerabilities
-        sh 'npm audit || true'
+        bat 'npm audit || true'
       }
     }
   }
