@@ -46,16 +46,15 @@ pipeline {
 stage('SonarCloud Analysis') {
   steps {
     powershell '''
-      # Force TLS1.2 for GitHub/Sonar downloads
+      # Force TLS1.2
       [Net.ServicePointManager]::SecurityProtocol = [Net.SecurityProtocolType]::Tls12
 
-      $workspace = $env:WORKSPACE
-      $zip       = Join-Path $workspace 'sonar-scanner.zip'
-      $outDir    = Join-Path $workspace 'sonar-scanner'
+      $ws     = $env:WORKSPACE
+      $zip    = Join-Path $ws 'sonar-scanner.zip'
+      $outDir = Join-Path $ws 'sonar-scanner'
 
-      # Download ZIP if missing
       if (-Not (Test-Path $zip)) {
-        Write-Host "Downloading SonarScanner CLI via WebClient…"
+        Write-Host "Downloading SonarScanner CLI…"
         $wc = New-Object System.Net.WebClient
         $wc.DownloadFile(
           'https://binaries.sonarsource.com/Distribution/sonar-scanner-cli/sonar-scanner-cli.zip',
@@ -63,20 +62,20 @@ stage('SonarCloud Analysis') {
         )
       }
 
-      # (Re)extract
+      # Clean & extract
       if (Test-Path $outDir) { Remove-Item $outDir -Recurse -Force }
       Write-Host "Extracting SonarScanner CLI…"
       Expand-Archive -Path $zip -DestinationPath $outDir
 
-      # Locate the versioned folder
+      # Find the versioned folder
       $scanner = Get-ChildItem -Directory $outDir |
                  Where-Object Name -Like 'sonar-scanner*' |
                  Select-Object -First 1
 
       if (-Not $scanner) { Throw '❌ sonar-scanner folder not found!' }
 
-      # Run SonarScanner
-      $exe = Join-Path $scanner.FullName 'bin\sonar-scanner.bat'
+      # Build the .bat path without embedding a backslash in the Groovy string
+      $exe = Join-Path (Join-Path $scanner.FullName 'bin') 'sonar-scanner.bat'
       Write-Host "Running SonarScanner: $exe"
       & $exe "-Dsonar.login=$env:SONAR_TOKEN"
     '''
