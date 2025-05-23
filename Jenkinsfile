@@ -66,7 +66,7 @@ pipeline {
       }
     }
   }
-delete
+
   post {
     // you can still send a final summary here if you like
     always {
