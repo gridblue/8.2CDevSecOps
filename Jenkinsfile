@@ -3,7 +3,7 @@ pipeline {
 
   triggers {
     githubPush()          // on every GitHub push
-
+//dummy
   }
 
   environment {
