@@ -21,24 +21,24 @@ pipeline {
       }
     }
 
-    stage('Run Tests') {
-      steps {
-        // Run tests but don’t fail the build if they break
-        bat 'npm test || true'
-      }
-    }
-
++    stage('Run Tests') {
++      steps {
++        // run npm test but don’t abort the build if it fails (e.g. Snyk auth errors)
++        bat script: 'npm test', returnStatus: true
++      }
++    }
+    
     stage('Generate Coverage') {
       steps {
         // Create a coverage report
-        bat 'npm run coverage || true'
++        bat script: 'npm run coverage', returnStatus: true
       }
     }
 
     stage('Security Scan') {
       steps {
         // Check for vulnerabilities
-        bat 'npm audit || true'
++        bat script: 'npm audit', returnStatus: true
       }
     }
   }
