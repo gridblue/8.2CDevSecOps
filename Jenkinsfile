@@ -42,6 +42,25 @@ pipeline {
       }
     }
   }
+stage('SonarCloud Analysis') {
+      environment {
+        SONAR_TOKEN = credentials('SONAR_TOKEN')
+      }
+      steps {
+        // Download & unpack the SonarScanner CLI (once per build)
+        bat '''
+          powershell -Command "Invoke-WebRequest https://binaries.sonarsource.com/Distribution/sonar-scanner-cli/sonar-scanner-cli.zip -OutFile sonar-scanner.zip"
+          powershell -Command "Expand-Archive sonar-scanner.zip -DestinationPath sonar-scanner"
+        '''
+        // Run the scanner
+        bat '''
+          sonar-scanner\\sonar-scanner-*/bin/sonar-scanner.bat ^
+            -Dsonar.login=%SONAR_TOKEN%
+        '''
+      }
+    }
+  }
+
 
   post {
     success {
