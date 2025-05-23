@@ -6,49 +6,70 @@ pipeline {
     pollSCM('H/5 * * * *')
   }
 
-  // Inject your SonarCloud token
-  environment {
-    SONAR_TOKEN = credentials('SONAR_TOKEN')
-  }
-
   stages {
     stage('Checkout') {
       steps {
         checkout scm
       }
     }
-
     stage('Install Dependencies') {
       steps {
         bat 'npm install'
       }
     }
-
     stage('Run Tests') {
       steps {
-        // run tests but don’t fail the build if they error
         bat script: 'npm test', returnStatus: true
       }
     }
-
     stage('Generate Coverage') {
       steps {
         bat script: 'npm run coverage', returnStatus: true
       }
     }
-
     stage('Security Scan') {
       steps {
         bat script: 'npm audit', returnStatus: true
       }
     }
+    // ← SonarCloud stage removed
+  }
 
   post {
     success {
-      echo '✅ Pipeline (with SonarCloud) succeeded.'
+      echo '✅ Build succeeded — sending success email.'
+      emailext(
+        subject: "✔️ BUILD SUCCESS: ${env.JOB_NAME} #${env.BUILD_NUMBER}",
+        body: """\
+          Hi,
+
+          The Jenkins job '${env.JOB_NAME}' (#${env.BUILD_NUMBER}) succeeded!
+
+          • URL: ${env.BUILD_URL}
+          • Commit: ${env.GIT_COMMIT ?: 'N/A'}
+
+          Cheers,
+          Jenkins
+        """,
+        to: 'your.email@domain.com'
+      )
     }
     failure {
-      echo '❌ Pipeline failed – check console & SonarCloud.'
+      echo '❌ Build failed — sending failure email.'
+      emailext(
+        subject: "❌ BUILD FAILURE: ${env.JOB_NAME} #${env.BUILD_NUMBER}",
+        body: """\
+          Hi,
+
+          The Jenkins job '${env.JOB_NAME}' (#${env.BUILD_NUMBER}) has failed.
+
+          • URL: ${env.BUILD_URL}
+          • Check console output for details.
+
+          Please investigate.
+        """,
+        to: 'your.email@domain.com'
+      )
     }
   }
 }
