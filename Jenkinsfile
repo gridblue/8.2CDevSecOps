@@ -43,44 +43,45 @@ pipeline {
             }
         }
 
-        stage('SonarCloud Analysis') {
-            steps {
-                powershell '''
-                    # go to workspace
-                    Set-Location $env:WORKSPACE
+stage('SonarCloud Analysis') {
+  steps {
+    powershell '''
+      # Force TLS1.2 for GitHub/Sonar downloads
+      [Net.ServicePointManager]::SecurityProtocol = [Net.SecurityProtocolType]::Tls12
 
-                    # download SonarScanner CLI if missing
-                    if (-Not (Test-Path sonar-scanner.zip)) {
-                        Write-Host "Downloading SonarScanner CLI…"
-                        Invoke-WebRequest `
-                          -Uri "https://binaries.sonarsource.com/Distribution/sonar-scanner-cli/sonar-scanner-cli.zip" `
-                          -OutFile "sonar-scanner.zip"
-                    }
+      $workspace = $env:WORKSPACE
+      $zip       = Join-Path $workspace 'sonar-scanner.zip'
+      $outDir    = Join-Path $workspace 'sonar-scanner'
 
-                    # extract (overwrite any existing)
-                    Write-Host "Extracting SonarScanner CLI…"
-                    Expand-Archive `
-                      -Path "sonar-scanner.zip" `
-                      -DestinationPath "sonar-scanner" `
-                      -Force
+      # Download ZIP if missing
+      if (-Not (Test-Path $zip)) {
+        Write-Host "Downloading SonarScanner CLI via WebClient…"
+        $wc = New-Object System.Net.WebClient
+        $wc.DownloadFile(
+          'https://binaries.sonarsource.com/Distribution/sonar-scanner-cli/sonar-scanner-cli.zip',
+          $zip
+        )
+      }
 
-                    # find the extracted folder (versioned name)
-                    $scannerDir = Get-ChildItem -Directory sonar-scanner |
-                                  Where-Object Name -Like "sonar-scanner*" |
-                                  Select-Object -First 1
+      # (Re)extract
+      if (Test-Path $outDir) { Remove-Item $outDir -Recurse -Force }
+      Write-Host "Extracting SonarScanner CLI…"
+      Expand-Archive -Path $zip -DestinationPath $outDir
 
-                    if (-Not $scannerDir) {
-                        Throw "Cannot locate extracted sonar-scanner folder!"
-                    }
+      # Locate the versioned folder
+      $scanner = Get-ChildItem -Directory $outDir |
+                 Where-Object Name -Like 'sonar-scanner*' |
+                 Select-Object -First 1
 
-                    # run the scanner
-                    $exe = Join-Path $scannerDir.FullName "bin\\sonar-scanner.bat"
-                    Write-Host "Running SonarScanner at $exe"
-                    & $exe "-Dsonar.login=$env:SONAR_TOKEN"
-                '''
-            }
-        }
-    }
+      if (-Not $scanner) { Throw '❌ sonar-scanner folder not found!' }
+
+      # Run SonarScanner
+      $exe = Join-Path $scanner.FullName 'bin\sonar-scanner.bat'
+      Write-Host "Running SonarScanner: $exe"
+      & $exe "-Dsonar.login=$env:SONAR_TOKEN"
+    '''
+  }
+}
 
     post {
         success {
